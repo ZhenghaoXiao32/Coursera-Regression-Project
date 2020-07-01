@@ -2,8 +2,9 @@
 title: "Moter Trend Regession Analysis"
 author: "Zhenghao Xiao"
 output:
-  html_document: default
+  md_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
