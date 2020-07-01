@@ -1,0 +1,119 @@
+---
+title: "Moter Trend Regession Analysis"
+author: "Zhenghao Xiao"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(car)
+library(ggfortify)
+library(tidyverse)
+```
+
+## Introduction
+
+This project used regression to analyze the relationships between a set of variables and miles per gallon (MPG), there are two main questions to answer in this project:
+
+- Is an automatic or manual transmission better for MPG?
+- Quantify the MPG difference between automatic and manual transmissions
+
+## Executive Summary
+
+The procedure of this project is:
+- data importing and pre-processing
+- exploratory data analysis
+- building multiple models 
+- model evaluation and selection
+- conclusion of answers to the question
+
+
+## Data preprocessing
+
+```{r}
+data(mtcars)
+mtcars$am <- as.factor(mtcars$am)
+levels(mtcars$am) <- c("automatic", "manual")
+
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$gear <- as.factor(mtcars$gear)
+mtcars$vs <- as.factor(mtcars$vs)
+levels(mtcars$vs) <- c("V", "S")
+```
+
+## Exploratory data analysis
+
+```{r}
+dim(mtcars)
+```
+
+The dataset has only 32 observations. Let's have a look of the relationship between mpg and am:
+
+```{r}
+ggplot(mtcars, aes(am, mpg)) +
+      geom_boxplot(aes(fill = am))
+
+```
+
+Looks like the manuals have a higher mpg. 
+
+## Building multiple models
+
+We can see that there are other correlations of mpg, indicating that the variance can be explained by the model will be relatively low if we only include am as predictor.
+
+### Building baseline model
+
+```{r}
+base_model <- lm(mpg ~ am, mtcars)
+summary(base_model)
+```
+
+According to the adjusted R-squared, we know the performance of the baseline model can be improved. Let's include all the predictors:
+
+### Building full model
+
+```{r}
+full_model <- lm(mpg ~ ., mtcars)
+summary(full_model)
+```
+
+As we predicted, the performance of the model improved. However, the data has only 32 observations, to include all the 10 predictors seems to be too bulky, let's try if selecting subsets of predictors can do any better. Let's try stepwise selection method:
+
+### Building smaller model
+
+```{r}
+step_model <- step(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+According to the result, it not only decreased p-value, but also increased the degrees of freedom and the adjusted R-squared of the model. We can use anova to check if the smaller model is really better than the full model:
+
+```{r}
+anova(step_model, full_model)
+```
+
+As the anova result shows, the step model is not significantly greater than the full model, and vice versa. Using the reasons mentioned above, we pick the smaller model as the best model.
+
+## Model evaluation
+
+To see if our model is good, we need to go through some assumption checks: 
+```{r}
+autoplot(step_model)
+```
+
+The residuals looks okay as we have only 32 data points. Let's check the multicollinearity.
+
+```{r}
+vif(step_model)
+```
+
+VIF shows that the multicollinearity is not a problem in our case. 
+
+## Conclusion
+
+Back to the core questions: Is an automatic or manual transmission better for MPG? Quantify the MPG difference between automatic and manual transmissions.
+
+To answer these questions, we need to go back to the simple linear regression with only am as preditor, since the multiple regression model did not generate a significant p-value for the am variable, and the stepwise picked model did not include am as predictor. According to the result of the simple linear regression model, the average MPG of manual transmission is significantly (p-value = 0.0003) more than the automatic tranmissions, the quantity is 7.245. In addition, noticing the simple linear regression model is limited at the predictive performance. 
+
